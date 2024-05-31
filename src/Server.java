@@ -3,6 +3,7 @@ import java.net.InetAddress;
 public class Server {
     private static ClientServer clients=new ClientServer(9876);
     private static int portCommunication=9877;
+    
     public static void main(String[] args) throws Exception {
         while (true) {
             clients.waitClient(portCommunication);
@@ -24,13 +25,14 @@ public class Server {
         ClientServer client=new ClientServer(portListener);
 
         client.connectToClient(addrClient, portClient);
+        if (client.isConnected()) {
 
-        String receivedMessage="";
-        while (true) {
-            receivedMessage=client.receiveString();
-            System.out.println("Client sent : "+receivedMessage);
-            
-            client.send("Received");
+            while (true) {
+                String receivedMessage=client.receiveString();
+                System.out.println("Client sent : "+receivedMessage);
+                
+                client.send("Received");
+            }
         }
     }
 }

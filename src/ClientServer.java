@@ -76,12 +76,12 @@ public class ClientServer {
             // wait a response for 1 second
             socket.setSoTimeout(1000);
             try {
-                while (response.length()<22 || !response.substring(0,22).equals("</%/connectionEcho/%/>")) {
+                do {
                     byte[] buffer = new byte[1024];
-                    DatagramPacket receivedPacket = new DatagramPacket(buffer, buffer.length);
+                    receivedPacket = new DatagramPacket(buffer, buffer.length);
                     socket.receive(receivedPacket);
                     response=new String(receivedPacket.getData(), 0, receivedPacket.getLength());
-                }
+                }while(!addrServ.equals(getLastAddress()) || getLastPort()!=portServ || response.length()<22 || !response.substring(0,22).equals("</%/connectionEcho/%/>"));
                 addrCom=addrServ;
                 String portStr=response.substring(22).trim();
                 portCom=Integer.parseInt(portStr);
@@ -255,163 +255,136 @@ public class ClientServer {
     }
 
     public byte [] receive () {
-        try {
-            byte[] buffer = new byte[1024];
-            receivedPacket = new DatagramPacket(buffer, buffer.length);
-            socket.receive(receivedPacket);
-            return receivedPacket.getData();
-        } catch (Exception e) {
-            System.out.println("Impossible to receive a message");
-            e.printStackTrace();
-        }
-        return null;
+        return receive(0);
     }
 
     public byte [] receive (int ms) {
         byte[] res = null;
-        try {
-            socket.setSoTimeout(ms);
+        if (0<=ms)
             try {
-                byte[] buffer = new byte[1024];
-                receivedPacket = new DatagramPacket(buffer, buffer.length);
-                socket.receive(receivedPacket);
-                res=receivedPacket.getData();
-            } catch (SocketTimeoutException e) {
-                socket.setSoTimeout(0);
-            }finally {
-                socket.setSoTimeout(0);
+                socket.setSoTimeout(ms);
+                try {
+                    byte[] buffer = new byte[1024];
+                    receivedPacket = new DatagramPacket(buffer, buffer.length);
+                    socket.receive(receivedPacket);
+                    res=receivedPacket.getData();
+                } catch (SocketTimeoutException e) {
+                    socket.setSoTimeout(0);
+                }finally {
+                    socket.setSoTimeout(0);
+                }
+            } catch (Exception e) {
+                System.out.println("Impossible to receive a message");
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            System.out.println("Impossible to receive a message");
-            e.printStackTrace();
-        }
+        else
+            System.out.println("Impossible to receive message because ms isn't positive");
         return res;
     }
 
     public String receiveString () {
-        try {
-            byte[] buffer = receive();
-            return new String(buffer, 0, receivedPacket.getLength());
-        } catch (Exception e) {
-            System.out.println("Impossible to convert the message to String");
-            e.printStackTrace();
-            return "";
-        }
+        return receiveString(0);
     }
 
     public String receiveString (int ms) {
-        try {
-            byte[] buffer = receive(ms);
-            return new String(buffer, 0, receivedPacket.getLength());
-        } catch (Exception e) {
-            System.out.println("Impossible to convert the message to String");
-            e.printStackTrace();
-            return "";
-        }
+        if (0<=ms)
+            try {
+                byte[] buffer = receive(ms);
+                if (buffer!=null)
+                    return new String(buffer, 0, receivedPacket.getLength());
+            } catch (Exception e) {
+                System.out.println("Impossible to convert the message to String");
+                e.printStackTrace();
+            }
+        else
+            System.out.println("Impossible to receive message because ms isn't positive");
+        return "";
     }
 
     public int receiveInt () {
-        try {
-            byte[] buffer = receive();
-            return ByteBuffer.wrap(buffer).getInt();
-        } catch (Exception e) {
-            System.out.println("Impossible to convert the message to int");
-            e.printStackTrace();
-            return 0;
-        }
+        return receiveInt(0);
     }
 
     public int receiveInt (int ms) {
-        try {
-            byte[] buffer = receive(ms);
-            return ByteBuffer.wrap(buffer).getInt();
-        } catch (Exception e) {
-            System.out.println("Impossible to convert the message to int");
-            e.printStackTrace();
-            return 0;
-        }
+        if (0<=ms)
+            try {
+                byte[] buffer = receive(ms);
+                if (buffer!=null)
+                    return ByteBuffer.wrap(buffer).getInt();
+            } catch (Exception e) {
+                System.out.println("Impossible to convert the message to int");
+                e.printStackTrace();
+            }
+        else
+            System.out.println("Impossible to receive message because ms isn't positive");
+        return 0;
     }
 
     public double receiveDouble () {
-        try {
-            byte[] buffer = receive();
-            return ByteBuffer.wrap(buffer).getDouble();
-        } catch (Exception e) {
-            System.out.println("Impossible to convert the message to double");
-            e.printStackTrace();
-            return 0;
-        }
+        return receiveDouble(0);
     }
 
     public double receiveDouble (int ms) {
-        try {
-            byte[] buffer = receive(ms);
-            return ByteBuffer.wrap(buffer).getDouble();
-        } catch (Exception e) {
-            System.out.println("Impossible to convert the message to double");
-            e.printStackTrace();
-            return 0;
-        }
+        if (0<=ms)
+            try {
+                byte[] buffer = receive(ms);
+                if (buffer!=null)
+                    return ByteBuffer.wrap(buffer).getDouble();
+            } catch (Exception e) {
+                System.out.println("Impossible to convert the message to double");
+                e.printStackTrace();
+            }
+        else
+            System.out.println("Impossible to receive message because ms isn't positive");
+        return 0;
     }
 
     public int [] receiveIntArray () {
-        try {
-            byte[] buffer = receive();
-            ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, buffer.length);
-            int[] intArray = new int[receivedPacket.getLength() / Integer.BYTES];
-            for (int i = 0; i < intArray.length; i++)
-                intArray[i] = byteBuffer.getInt();
-            return intArray;
-        } catch (Exception e) {
-            System.out.println("Impossible to convert the message to int []");
-            e.printStackTrace();
-            return null;
-        }
+        return receiveIntArray(0);
     }
 
     public int [] receiveIntArray (int ms) {
-        try {
-            byte[] buffer = receive(ms);
-            ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, buffer.length);
-            int[] intArray = new int[receivedPacket.getLength() / Integer.BYTES];
-            for (int i = 0; i < intArray.length; i++)
-                intArray[i] = byteBuffer.getInt();
-            return intArray;
-        } catch (Exception e) {
-            System.out.println("Impossible to convert the message to int []");
-            e.printStackTrace();
-            return null;
-        }
+        if (0<=ms)
+            try {
+                byte[] buffer = receive(ms);
+                if (buffer!=null) {
+                    ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, buffer.length);
+                    int[] intArray = new int[receivedPacket.getLength() / Integer.BYTES];
+                    for (int i = 0; i < intArray.length; i++)
+                        intArray[i] = byteBuffer.getInt();
+                    return intArray;
+                }
+            } catch (Exception e) {
+                System.out.println("Impossible to convert the message to int []");
+                e.printStackTrace();
+            }
+        else
+            System.out.println("Impossible to receive message because ms isn't positive");
+        return null;
     }
 
     public double [] receiveDoubleArray () {
-        try {
-            byte[] buffer = receive();
-            ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, receivedPacket.getLength());
-            double[] doubleArray = new double[receivedPacket.getLength() / Double.BYTES];
-            for (int i = 0; i < doubleArray.length; i++)
-                doubleArray[i] = byteBuffer.getDouble();
-            return doubleArray;
-        } catch (Exception e) {
-            System.out.println("Impossible to convert the message to double []");
-            e.printStackTrace();
-            return null;
-        }
+        return receiveDoubleArray(0);
     }
 
     public double [] receiveDoubleArray (int ms) {
-        try {
-            byte[] buffer = receive(ms);
-            ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, receivedPacket.getLength());
-            double[] doubleArray = new double[receivedPacket.getLength() / Double.BYTES];
-            for (int i = 0; i < doubleArray.length; i++)
-                doubleArray[i] = byteBuffer.getDouble();
-            return doubleArray;
-        } catch (Exception e) {
-            System.out.println("Impossible to convert the message to double []");
-            e.printStackTrace();
-            return null;
-        }
+        if (0<=ms)
+            try {
+                byte[] buffer = receive(ms);
+                if (buffer!=null) {
+                    ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, receivedPacket.getLength());
+                    double[] doubleArray = new double[receivedPacket.getLength() / Double.BYTES];
+                    for (int i = 0; i < doubleArray.length; i++)
+                        doubleArray[i] = byteBuffer.getDouble();
+                    return doubleArray;
+                }
+            } catch (Exception e) {
+                System.out.println("Impossible to convert the message to double []");
+                e.printStackTrace();
+            }
+        else
+            System.out.println("Impossible to receive message because ms isn't positive");
+        return null;
     }
 
 }
