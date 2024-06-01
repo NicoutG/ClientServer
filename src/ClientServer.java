@@ -298,15 +298,14 @@ public class ClientServer {
      * send a boolean array
      * @param addr recipient's address
      * @param port the recipient's port
-     * @param message boolean array to send (max length = 8160 booleans)
+     * @param message boolean array to send (max length = 8184 booleans)
      */
     public void send (InetAddress addr, int port, boolean [] message) {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(4+(message.length+7)/8);
-        byteBuffer.putInt(message.length); // number of booleans in the array
-        byte[] buffer = byteBuffer.array();
+        byte[] buffer = new byte [1+(message.length+7)/8];
+        buffer[0]=(byte)(1+(message.length-1)%8); // number of booleans in the last byte
         for (int i = 0; i < message.length; i++)
             if (message[i])
-                buffer[4+i/8] |= (1 << (i % 8));
+                buffer[1+i/8] |= (1 << (i % 8));
         send(addr,port,buffer);
     }
 
@@ -314,7 +313,7 @@ public class ClientServer {
      * send a boolean array
      * @param addr recipient's address
      * @param port the recipient's port
-     * @param message boolean array to send (max length = 8160 booleans)
+     * @param message boolean array to send (max length = 8184 booleans)
      */
     public void send (String addr, int port, boolean [] message) {
         try {
@@ -521,11 +520,10 @@ public class ClientServer {
             try {
                 byte[] buffer = receive(ms);
                 if (buffer!=null) {
-                    ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, buffer.length);
-                    int length = byteBuffer.getInt(); // number of booleans in the array
-                    boolean [] booleanArray=new boolean [length];
+                    int lengthLast = buffer[0]; // number of booleans in the last byte
+                    boolean [] booleanArray=new boolean [8*(receivedPacket.getLength()-2)+lengthLast];
                     for (int i=0;i<booleanArray.length;i++)
-                        booleanArray[i]=( (buffer[4+i/8] & (1 << (i%8)))!=0 );
+                        booleanArray[i]=( (buffer[1+i/8] & (1 << (i%8)))!=0 );
                     return booleanArray;
                 }
             } catch (Exception e) {
