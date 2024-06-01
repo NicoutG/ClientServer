@@ -30,6 +30,8 @@ public class ClientServer {
     }
 
     protected void finalize(){
+        if (connected)
+            disconnect();
         if (socket!=null && !socket.isClosed())
             socket.close();
     }
@@ -121,6 +123,17 @@ public class ClientServer {
             message=receiveString();
         }
         send(receivedPacket.getAddress(),receivedPacket.getPort(),"</%/connectionEcho/%/>"+port);
+    }
+
+    public void disconnect () {
+        if (connected) {
+            send("</%/disconnection/%/>");
+            connected=false;
+        }
+    }
+
+    public boolean isDeconnection (String message) {
+        return message.equals("</%/disconnection/%/>");
     }
 
     public void send (InetAddress addr, int port, byte [] message) {
@@ -268,6 +281,10 @@ public class ClientServer {
                     receivedPacket = new DatagramPacket(buffer, buffer.length);
                     socket.receive(receivedPacket);
                     res=receivedPacket.getData();
+                    if (connected && receivedPacket.getAddress().equals(addrCom) && receivedPacket.getPort()==portCom) {
+                        if (isDeconnection(new String(buffer, 0, receivedPacket.getLength())))
+                            connected=false;
+                    }
                 } catch (SocketTimeoutException e) {
                     socket.setSoTimeout(0);
                 }finally {

@@ -26,12 +26,10 @@ public class Server {
 
         client.connectToClient(addrClient, portClient);
         if (client.isConnected()) {
-            boolean clientConnected=true;
-            while (clientConnected) {
+
+            while (client.isConnected()) {
                 String receivedMessage=client.receiveString();
-                if (receivedMessage.equals("</%/disconnection/%/>"))
-                    clientConnected=false;
-                else {
+                if (!client.isDeconnection(receivedMessage)) {
                     System.out.println("Client sent : "+receivedMessage);
                     client.send("Received");
                 }
