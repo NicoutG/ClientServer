@@ -10,7 +10,7 @@ public class Client {
             String response=server.receiveString();
             System.out.println("Server sent : "+response);
 
-            server.send("</%/disconnection/%/>");
+            server.disconnect();
         }
     }
 }

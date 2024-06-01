@@ -29,13 +29,6 @@ public class ClientServer {
         }
     }
 
-    protected void finalize(){
-        if (connected)
-            disconnect();
-        if (socket!=null && !socket.isClosed())
-            socket.close();
-    }
-
     public boolean isConnected () {
         return connected;
     }
@@ -132,7 +125,7 @@ public class ClientServer {
         }
     }
 
-    public boolean isDeconnection (String message) {
+    public boolean isDeconnectionMessage (String message) {
         return message.equals("</%/disconnection/%/>");
     }
 
@@ -153,10 +146,22 @@ public class ClientServer {
             System.out.println("Impossible to send the message because you're not connected");
     }
 
+    /**
+     * send a String
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message String to send (max length = 512 characters)
+     */
     public void send (InetAddress addr, int port, String message) {
         send(addr,port,message.getBytes());
     }
 
+    /**
+     * send a String
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message String to send (max length = 512 characters)
+     */
     public void send (String addr, int port, String message) {
         try {
             send(InetAddress.getByName(addr),port,message);
@@ -166,7 +171,13 @@ public class ClientServer {
         }
     }
 
-    public void send(String  message) {
+    /**
+     * send a String to the server or client we are connected to
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message String to send (max length = 512 characters)
+     */
+    public void send(String message) {
         if (connected)
             send(addrCom,portCom,message);
         else
@@ -196,6 +207,28 @@ public class ClientServer {
             System.out.println("Impossible to send the message because you're not connected");
     }
 
+    public void send (InetAddress addr, int port, boolean message) {
+        byte[] buffer = new byte[1];
+        buffer[0]=(byte)(message ? 1 : 0);
+        send(addr,port,buffer);
+    }
+
+    public void send (String addr, int port, boolean message) {
+        try {
+            send(InetAddress.getByName(addr),port,message);
+        } catch (Exception e) {
+            System.out.println("Impossible to find the address of "+addr);
+            e.printStackTrace();
+        }
+    }
+
+    public void send(boolean message) {
+        if (connected)
+            send(addrCom,portCom,message);
+        else
+            System.out.println("Impossible to send the message because you're not connected");
+    }
+
     public void send (InetAddress addr, int port, double message) {
         byte[] buffer = new byte[Double.BYTES];
         ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
@@ -219,6 +252,12 @@ public class ClientServer {
             System.out.println("Impossible to send the message because you're not connected");
     }
 
+    /**
+     * send an array of ints
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message int array to send (max length = 256 ints)
+     */
     public void send (InetAddress addr, int port, int [] message) {
         ByteBuffer byteBuffer = ByteBuffer.allocate(message.length * Integer.BYTES);
         for (int value : message)
@@ -227,6 +266,12 @@ public class ClientServer {
         send(addr,port,buffer);
     }
 
+    /**
+     * send an array of ints
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message int array to send (max length = 256 ints)
+     */
     public void send (String addr, int port, int [] message) {
         try {
             send(InetAddress.getByName(addr),port,message);
@@ -236,6 +281,12 @@ public class ClientServer {
         }
     }
 
+    /**
+     * send an array of ints to the server or client we are connected to
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message int array to send (max length = 256 ints)
+     */
     public void send(int [] message) {
         if (connected)
             send(addrCom,portCom,message);
@@ -243,6 +294,56 @@ public class ClientServer {
             System.out.println("Impossible to send the message because you're not connected");
     }
 
+    /**
+     * send a boolean array
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message boolean array to send (max length = 8160 booleans)
+     */
+    public void send (InetAddress addr, int port, boolean [] message) {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(4+(message.length+7)/8);
+        byteBuffer.putInt(message.length); // number of booleans in the array
+        byte[] buffer = byteBuffer.array();
+        for (int i = 0; i < message.length; i++)
+            if (message[i])
+                buffer[4+i/8] |= (1 << (i % 8));
+        send(addr,port,buffer);
+    }
+
+    /**
+     * send a boolean array
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message boolean array to send (max length = 8160 booleans)
+     */
+    public void send (String addr, int port, boolean [] message) {
+        try {
+            send(InetAddress.getByName(addr),port,message);
+        } catch (Exception e) {
+            System.out.println("Impossible to find the address of "+addr);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * send an array of booleans to the server or client we are connected to
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message boolean array to send (max length = 8160 booleans)
+     */
+    public void send(boolean [] message) {
+        if (connected)
+            send(addrCom,portCom,message);
+        else
+            System.out.println("Impossible to send the message because you're not connected");
+    }
+
+    /**
+     * send an array of doubles
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message double array to send (max length = 128 doubles)
+     */
     public void send (InetAddress addr, int port, double [] message) {
         ByteBuffer byteBuffer = ByteBuffer.allocate(message.length * Double.BYTES);
         for (double value : message)
@@ -251,6 +352,12 @@ public class ClientServer {
         send(addr,port,buffer);
     }
 
+    /**
+     * send an array of doubles
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message double array to send (max length = 128 doubles)
+     */
     public void send (String addr, int port, double [] message) {
         try {
             send(InetAddress.getByName(addr),port,message);
@@ -260,6 +367,12 @@ public class ClientServer {
         }
     }
 
+    /**
+     * send an array of doubles to the server or client we are connected to
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message double array to send (max length = 128 doubles)
+     */
     public void send(double [] message) {
         if (connected)
             send(addrCom,portCom,message);
@@ -282,7 +395,7 @@ public class ClientServer {
                     socket.receive(receivedPacket);
                     res=receivedPacket.getData();
                     if (connected && receivedPacket.getAddress().equals(addrCom) && receivedPacket.getPort()==portCom) {
-                        if (isDeconnection(new String(buffer, 0, receivedPacket.getLength())))
+                        if (isDeconnectionMessage(new String(buffer, 0, receivedPacket.getLength())))
                             connected=false;
                     }
                 } catch (SocketTimeoutException e) {
@@ -337,6 +450,25 @@ public class ClientServer {
         return 0;
     }
 
+    public boolean receiveBoolean () {
+        return receiveBoolean(0);
+    }
+
+    public boolean receiveBoolean (int ms) {
+        if (0<=ms)
+            try {
+                byte[] buffer = receive(ms);
+                if (buffer!=null)
+                    return buffer[0]!=0;
+            } catch (Exception e) {
+                System.out.println("Impossible to convert the message to boolean");
+                e.printStackTrace();
+            }
+        else
+            System.out.println("Impossible to receive message because ms isn't positive");
+        return false;
+    }
+
     public double receiveDouble () {
         return receiveDouble(0);
     }
@@ -380,6 +512,31 @@ public class ClientServer {
         return null;
     }
 
+    public boolean [] receiveBooleanArray () {
+        return receiveBooleanArray(0);
+    }
+
+    public boolean [] receiveBooleanArray (int ms) {
+        if (0<=ms)
+            try {
+                byte[] buffer = receive(ms);
+                if (buffer!=null) {
+                    ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, buffer.length);
+                    int length = byteBuffer.getInt(); // number of booleans in the array
+                    boolean [] booleanArray=new boolean [length];
+                    for (int i=0;i<booleanArray.length;i++)
+                        booleanArray[i]=( (buffer[4+i/8] & (1 << (i%8)))!=0 );
+                    return booleanArray;
+                }
+            } catch (Exception e) {
+                System.out.println("Impossible to convert the message to boolean []");
+                e.printStackTrace();
+            }
+        else
+            System.out.println("Impossible to receive message because ms isn't positive");
+        return null;
+    }
+
     public double [] receiveDoubleArray () {
         return receiveDoubleArray(0);
     }
@@ -402,6 +559,11 @@ public class ClientServer {
         else
             System.out.println("Impossible to receive message because ms isn't positive");
         return null;
+    }
+
+    protected void finalize() {
+        if (socket!=null && !socket.isClosed())
+            socket.close();
     }
 
 }

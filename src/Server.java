@@ -29,7 +29,7 @@ public class Server {
 
             while (client.isConnected()) {
                 String receivedMessage=client.receiveString();
-                if (!client.isDeconnection(receivedMessage)) {
+                if (!client.isDeconnectionMessage(receivedMessage)) {
                     System.out.println("Client sent : "+receivedMessage);
                     client.send("Received");
                 }
