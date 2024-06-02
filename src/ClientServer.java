@@ -132,6 +132,10 @@ public class ClientServer {
 
     public void send (InetAddress addr, int port, byte [] message) {
         try {
+            if (message.length>1024) {
+                System.out.println("Warning : Only 1024 bytes sent out of "+message.length);
+                message=Arrays.copyOfRange(message, 0, 1024);
+            }
             DatagramPacket packet = new DatagramPacket(message, message.length, addr, port);
             socket.send(packet);
         } catch (Exception e) {
@@ -154,7 +158,12 @@ public class ClientServer {
      * @param message String to send (max length = 1024 characters)
      */
     public void send (InetAddress addr, int port, String message) {
-        send(addr,port,message.getBytes());
+        byte[] buffer=message.getBytes();
+        if (buffer.length>1024) {
+            System.out.println("Warning : Only 1024 characters sent out of "+buffer.length);
+            buffer=Arrays.copyOfRange(buffer, 0, 1024);
+        }
+        send(addr,port,buffer);
     }
 
     /**
@@ -253,6 +262,29 @@ public class ClientServer {
             System.out.println("Impossible to send the message because you're not connected");
     }
 
+    public void send (InetAddress addr, int port, float message) {
+        byte[] buffer = new byte[Float.BYTES];
+        ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+        byteBuffer.putFloat(message);
+        send(addr,port,buffer);
+    }
+
+    public void send (String addr, int port, float message) {
+        try {
+            send(InetAddress.getByName(addr),port,message);
+        } catch (Exception e) {
+            System.out.println("Impossible to find the address of "+addr);
+            e.printStackTrace();
+        }
+    }
+
+    public void send(float message) {
+        if (connected)
+            send(addrCom,portCom,message);
+        else
+            System.out.println("Impossible to send the message because you're not connected");
+    }
+
     /**
      * send an array of ints
      * @param addr recipient's address
@@ -260,9 +292,14 @@ public class ClientServer {
      * @param message int array to send (max length = 256 ints)
      */
     public void send (InetAddress addr, int port, int [] message) {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(message.length * Integer.BYTES);
-        for (int value : message)
-            byteBuffer.putInt(value);
+        int length=message.length;
+        if (length>256) {
+            length=256;
+            System.out.println("Warning : Only 256 ints sent out of "+message.length);
+        }
+        ByteBuffer byteBuffer = ByteBuffer.allocate(length * Integer.BYTES);
+        for (int i=0;i<length;i++)
+            byteBuffer.putInt(message[i]);
         byte[] buffer = byteBuffer.array();
         send(addr,port,buffer);
     }
@@ -302,9 +339,17 @@ public class ClientServer {
      * @param message boolean array to send (max length = 8184 booleans)
      */
     public void send (InetAddress addr, int port, boolean [] message) {
-        byte[] buffer = new byte [1+(message.length+7)/8];
-        buffer[0]=(byte)(1+(message.length-1)%8); // number of booleans in the last byte
-        for (int i = 0; i < message.length; i++)
+        int length=message.length;
+        if (length>8184) {
+            length=8184;
+            System.out.println("Warning : Only 8184 booleans sent out of "+message.length);
+        }
+        byte[] buffer = new byte [1+(length+7)/8];
+        if (length==8184)
+            buffer[0]=8;
+        else
+            buffer[0]=(byte)(1+(length-1)%8); // number of booleans in the last byte
+        for (int i = 0; i < length; i++)
             if (message[i])
                 buffer[1+i/8] |= (1 << (i % 8));
         send(addr,port,buffer);
@@ -345,9 +390,14 @@ public class ClientServer {
      * @param message double array to send (max length = 128 doubles)
      */
     public void send (InetAddress addr, int port, double [] message) {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(message.length * Double.BYTES);
-        for (double value : message)
-            byteBuffer.putDouble(value);
+        int length=message.length;
+        if (length>128) {
+            length=128;
+            System.out.println("Warning : Only 128 doubles sent out of "+message.length);
+        }
+        ByteBuffer byteBuffer = ByteBuffer.allocate(length * Double.BYTES);
+        for (int i=0;i<length;i++)
+            byteBuffer.putDouble(message[i]);
         byte[] buffer = byteBuffer.array();
         send(addr,port,buffer);
     }
@@ -374,6 +424,53 @@ public class ClientServer {
      * @param message double array to send (max length = 128 doubles)
      */
     public void send(double [] message) {
+        if (connected)
+            send(addrCom,portCom,message);
+        else
+            System.out.println("Impossible to send the message because you're not connected");
+    }
+
+    /**
+     * send an array of floats
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message float array to send (max length = 256 floats)
+     */
+    public void send (InetAddress addr, int port, float [] message) {
+        int length=message.length;
+        if (length>256) {
+            length=256;
+            System.out.println("Warning : Only 256 floats sent out of "+message.length);
+        }
+        ByteBuffer byteBuffer = ByteBuffer.allocate(length * Float.BYTES);
+        for (int i=0;i<length;i++)
+            byteBuffer.putFloat(message[i]);
+        byte[] buffer = byteBuffer.array();
+        send(addr,port,buffer);
+    }
+
+    /**
+     * send an array of floats
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message float array to send (max length = 256 floats)
+     */
+    public void send (String addr, int port, float [] message) {
+        try {
+            send(InetAddress.getByName(addr),port,message);
+        } catch (Exception e) {
+            System.out.println("Impossible to find the address of "+addr);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * send an array of floats to the server or client we are connected to
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message float array to send (max length = 256 floats)
+     */
+    public void send(float [] message) {
         if (connected)
             send(addrCom,portCom,message);
         else
@@ -488,6 +585,25 @@ public class ClientServer {
         return 0;
     }
 
+    public float receiveFloat () {
+        return receiveFloat(0);
+    }
+
+    public float receiveFloat (int ms) {
+        if (0<=ms)
+            try {
+                byte[] buffer = receive(ms);
+                if (buffer!=null)
+                    return ByteBuffer.wrap(buffer).getFloat();
+            } catch (Exception e) {
+                System.out.println("Impossible to convert the message to float");
+                e.printStackTrace();
+            }
+        else
+            System.out.println("Impossible to receive message because ms isn't positive");
+        return 0;
+    }
+
     public int [] receiveIntArray () {
         return receiveIntArray(0);
     }
@@ -553,6 +669,30 @@ public class ClientServer {
                 }
             } catch (Exception e) {
                 System.out.println("Impossible to convert the message to double []");
+                e.printStackTrace();
+            }
+        else
+            System.out.println("Impossible to receive message because ms isn't positive");
+        return null;
+    }
+
+    public float [] receiveFloatArray () {
+        return receiveFloatArray(0);
+    }
+
+    public float [] receiveFloatArray (int ms) {
+        if (0<=ms)
+            try {
+                byte[] buffer = receive(ms);
+                if (buffer!=null) {
+                    ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, buffer.length);
+                    float[] floatArray = new float[buffer.length / Float.BYTES];
+                    for (int i = 0; i < floatArray.length; i++)
+                        floatArray[i] = byteBuffer.getFloat();
+                    return floatArray;
+                }
+            } catch (Exception e) {
+                System.out.println("Impossible to convert the message to float []");
                 e.printStackTrace();
             }
         else
