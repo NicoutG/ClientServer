@@ -3,6 +3,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class ClientServer {
     private DatagramSocket socket=null;
@@ -150,7 +151,7 @@ public class ClientServer {
      * send a String
      * @param addr recipient's address
      * @param port the recipient's port
-     * @param message String to send (max length = 512 characters)
+     * @param message String to send (max length = 1024 characters)
      */
     public void send (InetAddress addr, int port, String message) {
         send(addr,port,message.getBytes());
@@ -160,7 +161,7 @@ public class ClientServer {
      * send a String
      * @param addr recipient's address
      * @param port the recipient's port
-     * @param message String to send (max length = 512 characters)
+     * @param message String to send (max length = 1024 characters)
      */
     public void send (String addr, int port, String message) {
         try {
@@ -175,7 +176,7 @@ public class ClientServer {
      * send a String to the server or client we are connected to
      * @param addr recipient's address
      * @param port the recipient's port
-     * @param message String to send (max length = 512 characters)
+     * @param message String to send (max length = 1024 characters)
      */
     public void send(String message) {
         if (connected)
@@ -328,7 +329,7 @@ public class ClientServer {
      * send an array of booleans to the server or client we are connected to
      * @param addr recipient's address
      * @param port the recipient's port
-     * @param message boolean array to send (max length = 8160 booleans)
+     * @param message boolean array to send (max length = 8184 booleans)
      */
     public void send(boolean [] message) {
         if (connected)
@@ -392,9 +393,9 @@ public class ClientServer {
                     byte[] buffer = new byte[1024];
                     receivedPacket = new DatagramPacket(buffer, buffer.length);
                     socket.receive(receivedPacket);
-                    res=receivedPacket.getData();
+                    res=Arrays.copyOfRange(receivedPacket.getData(), 0, receivedPacket.getLength());
                     if (connected && receivedPacket.getAddress().equals(addrCom) && receivedPacket.getPort()==portCom) {
-                        if (isDeconnectionMessage(new String(buffer, 0, receivedPacket.getLength())))
+                        if (isDeconnectionMessage(new String(res, 0, res.length)))
                             connected=false;
                     }
                 } catch (SocketTimeoutException e) {
@@ -420,7 +421,7 @@ public class ClientServer {
             try {
                 byte[] buffer = receive(ms);
                 if (buffer!=null)
-                    return new String(buffer, 0, receivedPacket.getLength());
+                    return new String(buffer, 0, buffer.length);
             } catch (Exception e) {
                 System.out.println("Impossible to convert the message to String");
                 e.printStackTrace();
@@ -497,7 +498,7 @@ public class ClientServer {
                 byte[] buffer = receive(ms);
                 if (buffer!=null) {
                     ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, buffer.length);
-                    int[] intArray = new int[receivedPacket.getLength() / Integer.BYTES];
+                    int[] intArray = new int[buffer.length / Integer.BYTES];
                     for (int i = 0; i < intArray.length; i++)
                         intArray[i] = byteBuffer.getInt();
                     return intArray;
@@ -521,7 +522,7 @@ public class ClientServer {
                 byte[] buffer = receive(ms);
                 if (buffer!=null) {
                     int lengthLast = buffer[0]; // number of booleans in the last byte
-                    boolean [] booleanArray=new boolean [8*(receivedPacket.getLength()-2)+lengthLast];
+                    boolean [] booleanArray=new boolean [8*(buffer.length-2)+lengthLast];
                     for (int i=0;i<booleanArray.length;i++)
                         booleanArray[i]=( (buffer[1+i/8] & (1 << (i%8)))!=0 );
                     return booleanArray;
@@ -544,8 +545,8 @@ public class ClientServer {
             try {
                 byte[] buffer = receive(ms);
                 if (buffer!=null) {
-                    ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, receivedPacket.getLength());
-                    double[] doubleArray = new double[receivedPacket.getLength() / Double.BYTES];
+                    ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, buffer.length);
+                    double[] doubleArray = new double[buffer.length / Double.BYTES];
                     for (int i = 0; i < doubleArray.length; i++)
                         doubleArray[i] = byteBuffer.getDouble();
                     return doubleArray;
