@@ -703,9 +703,6 @@ public class ClientServer {
         space=Math.min(buffer.length-length,1024);
 
         while (0<space) {
-            try {
-                Thread.sleep(1000);
-            }catch (Exception e) {}
             buffer2=new byte[space];
             System.arraycopy(buffer, length, buffer2, 0, space);
             sendMessage(addr,port,buffer2);
@@ -745,7 +742,7 @@ public class ClientServer {
             System.arraycopy(buffer, 4, res, 0, buffer.length-4);
             int extracted=buffer.length-4;
             while (extracted<length) {
-                buffer=receiveMessageFrom(addr,port,0);
+                buffer=receiveMessageFrom(addr,port,10);
                 if (buffer==null) {
                     System.out.println("Impossible to receive message because a part is missing");
                     return null;
