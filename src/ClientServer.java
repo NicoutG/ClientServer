@@ -79,9 +79,9 @@ public class ClientServer {
                     socket.receive(receivedPacket);
                     buffer=Arrays.copyOfRange(receivedPacket.getData(), 5, receivedPacket.getLength());
                     response=byteToString(buffer);
-                }while(!addrServ.equals(getLastAddress()) || getLastPort()!=portServ || response.length()<=22 || !response.substring(0,22).equals("</%/connectionEcho/%/>"));
+                }while(!addrServ.equals(getLastAddress()) || getLastPort()!=portServ || response.length()<=23 || !response.substring(0,23).equals("</%/connectionReply/%/>"));
                 addrCom=addrServ;
-                String portStr=response.substring(22).trim();
+                String portStr=response.substring(23).trim();
                 portCom=Integer.parseInt(portStr);
                 connected=true;
                 try { // to avoid bugs
@@ -118,7 +118,7 @@ public class ClientServer {
         while (message.length()!=25 || !message.equals("</%/connectionRequest/%/>")) {
             message=receiveString();
         }
-        send(receivedPacket.getAddress(),receivedPacket.getPort(),"</%/connectionEcho/%/>"+port);
+        send(receivedPacket.getAddress(),receivedPacket.getPort(),"</%/connectionReply/%/>"+port);
     }
 
     public void disconnect () {
