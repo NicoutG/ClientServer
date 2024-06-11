@@ -6,14 +6,45 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Vector;
 
+/**
+* class to facilitate exchanges between clients and servers
+*/
+
 public class ClientServer {
+
+    /**
+     * socket to send and receive messages
+     */
     private DatagramSocket socket=null;
+
+    /**
+     * the address of the client or server being communicated with
+     */
     private InetAddress addrCom=null;
+
+    /**
+     * the port of the client or server being communicated with
+     */
     private int portCom=-1;
+
+    /**
+     * if we are connected to a client or a server
+     */
     private boolean connected=false;
+
+    /**
+     * packet to receive messages
+     */
     private DatagramPacket receivedPacket=null;
+
+    /**
+     * unread messages received
+     */
     private Vector <DatagramPacket> messages=new Vector <DatagramPacket> ();
 
+    /**
+     * class constructor
+     */
     public ClientServer () {
         try {
             socket = new DatagramSocket();
@@ -23,6 +54,10 @@ public class ClientServer {
         }
     }
 
+    /**
+     * class constructor
+     * @param portList the port number used to receive messages
+     */
     public ClientServer (int portList) {
         try {
             socket = new DatagramSocket(portList);
@@ -32,40 +67,69 @@ public class ClientServer {
         }
     }
 
+    /**
+     * acessor of connect
+     * @return boolean true if we are connected to client or a server, false otherwise
+     */
     public boolean isConnected () {
         return connected;
     }
 
+    /**
+     * acessor of addrCom
+     * @return InetAddress the address of the client or server being communicated with
+     */
     public InetAddress getAddressCom () {
         if (connected)
             return addrCom;
         return null;
     }
 
+    /**
+     * returns the address of the last message
+     * @return InetAddress the address of the last message
+     */
     public InetAddress getLastAddress () {
         if (receivedPacket!=null)
             return receivedPacket.getAddress();
         return null;
     }
 
+    /**
+     * returns the port number used to receive messages
+     * @return int the port number used to receive messages
+     */
     public int getLocalPort () {
         if (socket!=null && !socket.isClosed())
             return socket.getLocalPort();
         return -1;
     }
 
+    /**
+     * acessor of portCom
+     * @return int the port of the client or server being communicated with
+     */
     public int getPortCom () {
         if (connected)
             return portCom;
         return -1;
     }
 
+    /**
+     * returns the port of the last message
+     * @return int the port of the last message
+     */
     public int getLastPort () {
         if (receivedPacket!=null)
             return receivedPacket.getPort();
         return -1;
     }
 
+    /**
+     * sends a connection request to a server and waits for a response before being redirected to another port
+     * @param addrServ the server address
+     * @param portServ the server port
+     */
     public void connectToServer (InetAddress addrServ, int portServ) {
         try {
             send(addrServ,portServ,"</%/connectionRequest/%/>");
@@ -98,6 +162,11 @@ public class ClientServer {
         }
     }
 
+    /**
+     * sends a connection request to a server and waits for a response before being redirected to another port
+     * @param addrServ the server's domain name
+     * @param portServ the server port
+     */
     public void connectToServer (String addrServ, int portServ) {
         try {
             connectToServer(InetAddress.getByName(addrServ),portServ);
@@ -107,12 +176,22 @@ public class ClientServer {
         }
     }
 
+    /**
+     * connects to a client
+     * @param addrClient the client's domain name
+     * @param portClient the client port
+     */
     public void connectToClient (InetAddress addrClient, int portClient) {
         addrCom=addrClient;
         portCom=portClient;
         connected=true;
     }
 
+    /**
+     * waits for a connection request from a client and sends a response with a port number
+     * @param addrServ the server's domain name
+     * @param portServ the server port
+     */
     public void waitClient (int port) {
         String message="";
         while (message.length()!=25 || !message.equals("</%/connectionRequest/%/>")) {
@@ -121,6 +200,9 @@ public class ClientServer {
         send(receivedPacket.getAddress(),receivedPacket.getPort(),"</%/connectionReply/%/>"+port);
     }
 
+    /**
+     * sends a disconnection message to the server and interpompts the communication
+     */
     public void disconnect () {
         if (connected) {
             send("</%/disconnection/%/>");
@@ -128,10 +210,21 @@ public class ClientServer {
         }
     }
 
+    /**
+     * returns true if the message is a deconnection message, false otherwise
+     * @param message the message to compare
+     * @return true if the message is a deconnection message, false otherwise
+     */
     public boolean isDeconnectionMessage (String message) {
         return message.equals("</%/disconnection/%/>");
     }
 
+    /**
+     * sends bytes
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message bytes to send
+     */
     public void send (InetAddress addr, int port, byte [] message) {
         byte[] buffer=new byte [message.length+1];
         buffer[0]=80;
@@ -139,6 +232,10 @@ public class ClientServer {
         sendMessages(addr,port,buffer);
     }
 
+    /**
+     * sends bytes to the client or server to which we are connected
+     * @param message bytes to send
+     */
     public void send(byte [] message) {
         if (connected)
             send(addrCom,portCom,message);
@@ -147,7 +244,7 @@ public class ClientServer {
     }
 
     /**
-     * send a String
+     * sends a String
      * @param addr recipient's address
      * @param port the recipient's port
      * @param message String to send
@@ -161,7 +258,7 @@ public class ClientServer {
     }
 
     /**
-     * send a String
+     * sends a String
      * @param addr recipient's address
      * @param port the recipient's port
      * @param message String to send
@@ -176,7 +273,7 @@ public class ClientServer {
     }
 
     /**
-     * send a String to the server or client we are connected to
+     * sends a String to the client or server to which we are connected
      * @param addr recipient's address
      * @param port the recipient's port
      * @param message String to send
@@ -188,6 +285,12 @@ public class ClientServer {
             System.out.println("Impossible to send the message because you're not connected");
     }
 
+    /**
+     * sends an int
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message int to send
+     */
     public void send (InetAddress addr, int port, int message) {
         byte [] bufferPrep=intToByte(message);
         byte[] buffer=new byte [bufferPrep.length+1];
@@ -196,6 +299,12 @@ public class ClientServer {
         sendMessages(addr,port,buffer);
     }
 
+    /**
+     * sends an int
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message int to send
+     */
     public void send (String addr, int port, int message) {
         try {
             send(InetAddress.getByName(addr),port,message);
@@ -205,6 +314,12 @@ public class ClientServer {
         }
     }
 
+    /**
+     * sends an int to the client or server to which we are connected
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message int to send
+     */
     public void send(int message) {
         if (connected)
             send(addrCom,portCom,message);
@@ -212,6 +327,12 @@ public class ClientServer {
             System.out.println("Impossible to send the message because you're not connected");
     }
 
+    /**
+     * sends a boolean
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message boolean to send
+     */
     public void send (InetAddress addr, int port, boolean message) {
         byte [] bufferPrep=booleanToByte(message);
         byte[] buffer=new byte [bufferPrep.length+1];
@@ -220,6 +341,12 @@ public class ClientServer {
         sendMessages(addr,port,buffer);
     }
 
+    /**
+     * sends a boolean
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message boolean to send
+     */
     public void send (String addr, int port, boolean message) {
         try {
             send(InetAddress.getByName(addr),port,message);
@@ -229,6 +356,12 @@ public class ClientServer {
         }
     }
 
+    /**
+     * sends a boolean to the client or server to which we are connected
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message boolean to send
+     */
     public void send(boolean message) {
         if (connected)
             send(addrCom,portCom,message);
@@ -236,6 +369,12 @@ public class ClientServer {
             System.out.println("Impossible to send the message because you're not connected");
     }
 
+    /**
+     * sends a double
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message double to send
+     */
     public void send (InetAddress addr, int port, double message) {
         byte [] bufferPrep=doubleToByte(message);
         byte[] buffer=new byte [bufferPrep.length+1];
@@ -244,6 +383,12 @@ public class ClientServer {
         sendMessages(addr,port,buffer);
     }
 
+    /**
+     * sends a double
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message double to send
+     */
     public void send (String addr, int port, double message) {
         try {
             send(InetAddress.getByName(addr),port,message);
@@ -253,6 +398,12 @@ public class ClientServer {
         }
     }
 
+    /**
+     * sends a double to the client or server to which we are connected
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param message double to send
+     */
     public void send(double message) {
         if (connected)
             send(addrCom,portCom,message);
@@ -261,7 +412,7 @@ public class ClientServer {
     }
 
     /**
-     * send an array of ints
+     * sends an array of ints
      * @param addr recipient's address
      * @param port the recipient's port
      * @param message int array to send
@@ -275,7 +426,7 @@ public class ClientServer {
     }
 
     /**
-     * send an array of ints
+     * sends an array of ints
      * @param addr recipient's address
      * @param port the recipient's port
      * @param message int array to send
@@ -290,7 +441,7 @@ public class ClientServer {
     }
 
     /**
-     * send an array of ints to the server or client we are connected to
+     * sends an array of ints to the client or server to which we are connected
      * @param addr recipient's address
      * @param port the recipient's port
      * @param message int array to send
@@ -303,7 +454,7 @@ public class ClientServer {
     }
 
     /**
-     * send a boolean array
+     * sends a boolean array
      * @param addr recipient's address
      * @param port the recipient's port
      * @param message boolean array to send
@@ -317,7 +468,7 @@ public class ClientServer {
     }
 
     /**
-     * send a boolean array
+     * sends a boolean array
      * @param addr recipient's address
      * @param port the recipient's port
      * @param message boolean array to send
@@ -332,7 +483,7 @@ public class ClientServer {
     }
 
     /**
-     * send an array of booleans to the server or client we are connected to
+     * sends an array of booleans to the client or server to which we are connected
      * @param addr recipient's address
      * @param port the recipient's port
      * @param message boolean array to send
@@ -345,7 +496,7 @@ public class ClientServer {
     }
 
     /**
-     * send an array of doubles
+     * sends an array of doubles
      * @param addr recipient's address
      * @param port the recipient's port
      * @param message double array to send
@@ -359,7 +510,7 @@ public class ClientServer {
     }
 
     /**
-     * send an array of doubles
+     * sends an array of doubles
      * @param addr recipient's address
      * @param port the recipient's port
      * @param message double array to send
@@ -374,7 +525,7 @@ public class ClientServer {
     }
 
     /**
-     * send an array of doubles to the server or client we are connected to
+     * sends an array of doubles to the client or server to which we are connected
      * @param addr recipient's address
      * @param port the recipient's port
      * @param message double array to send
@@ -386,10 +537,19 @@ public class ClientServer {
             System.out.println("Impossible to send the message because you're not connected");
     }
 
+    /**
+     * waits for bytes to be received
+     * @return byte [] the message received
+     */
     public byte [] receiveBytes () {
         return receiveBytes(0);
     }
 
+    /**
+     * waits for bytes to be received
+     * @param ms maximum waiting time
+     * @return byte [] the message received
+     */
     public byte [] receiveBytes (int ms) {
         byte[] res = null;
         if (0<=ms) {
@@ -401,10 +561,19 @@ public class ClientServer {
         return res;
     }
 
+    /**
+     * waits for a String to be received
+     * @return String the message received
+     */
     public String receiveString () {
         return receiveString(0);
     }
 
+    /**
+     * waits for a String to be received
+     * @param ms maximum waiting time
+     * @return String the message received
+     */
     public String receiveString (int ms) {
         String res = "";
         if (0<=ms) {
@@ -420,10 +589,19 @@ public class ClientServer {
         return res;
     }
 
+    /**
+     * waits for an int to be received
+     * @return int the message received
+     */
     public int receiveInt () {
         return receiveInt(0);
     }
 
+    /**
+     * waits for an int to be received
+     * @param ms maximum waiting time
+     * @return int the message received
+     */
     public int receiveInt (int ms) {
         int res = 0;
         if (0<=ms) {
@@ -439,10 +617,19 @@ public class ClientServer {
         return res;
     }
 
+    /**
+     * waits for a boolean to be received
+     * @return boolean the message received
+     */
     public boolean receiveBoolean () {
         return receiveBoolean(0);
     }
 
+    /**
+     * waits for a boolean to be received
+     * @param ms maximum waiting time
+     * @return boolean the message received
+     */
     public boolean receiveBoolean (int ms) {
         boolean res = false;
         if (0<=ms) {
@@ -458,10 +645,19 @@ public class ClientServer {
         return res;
     }
 
+    /**
+     * waits for a double to be received
+     * @return double the message received
+     */
     public double receiveDouble () {
         return receiveDouble(0);
     }
 
+    /**
+     * waits for a double to be received
+     * @param ms maximum waiting time
+     * @return double the message received
+     */
     public double receiveDouble (int ms) {
         double res = 0;
         if (0<=ms) {
@@ -477,10 +673,19 @@ public class ClientServer {
         return res;
     }
 
+    /**
+     * waits for ints to be received
+     * @return int [] the message received
+     */
     public int [] receiveIntArray () {
         return receiveIntArray(0);
     }
 
+    /**
+     * waits for ints to be received
+     * @param ms maximum waiting time
+     * @return int [] the message received
+     */
     public int [] receiveIntArray (int ms) {
         int[] res = null;
         if (0<=ms) {
@@ -496,10 +701,19 @@ public class ClientServer {
         return res;
     }
 
+    /**
+     * waits for booleans to be received
+     * @return boolean [] the message received
+     */
     public boolean [] receiveBooleanArray () {
         return receiveBooleanArray(0);
     }
 
+    /**
+     * waits for booleans to be received
+     * @param ms maximum waiting time
+     * @return boolean [] the message received
+     */
     public boolean [] receiveBooleanArray (int ms) {
         boolean[] res = null;
         if (0<=ms) {
@@ -515,10 +729,19 @@ public class ClientServer {
         return res;
     }
 
+    /**
+     * waits for doubles to be received
+     * @return double [] the message received
+     */
     public double [] receiveDoubleArray () {
         return receiveDoubleArray(0);
     }
 
+    /**
+     * waits for doubles to be received
+     * @param ms maximum waiting time
+     * @return double [] the message received
+     */
     public double [] receiveDoubleArray (int ms) {
         double[] res = null;
         if (0<=ms) {
@@ -534,10 +757,19 @@ public class ClientServer {
         return res;
     }
 
+    /**
+     * waits for an Object to be received
+     * @return Object the message received
+     */
     public Object receiveObject () {
         return receiveObject(0);
     }
 
+    /**
+     * waits for an Object to be received
+     * @param ms maximum waiting time
+     * @return Object the message received
+     */
     public Object receiveObject (int ms) {
         if (0<=ms) {
             byte[] buffer=receiveMessages(ms);
@@ -560,14 +792,29 @@ public class ClientServer {
         return null;
     }
 
+    /**
+     * converts a String into bytes
+     * @param message the message to convert
+     * @return byte [] the converted message
+     */
     public byte[] StringToByte (String message) {
         return message.getBytes();
     }
 
+    /**
+     * converts bytes into a String
+     * @param buffer the message to convert
+     * @return String the converted message
+     */
     public String byteToString (byte[] buffer) {
         return new String(buffer, 0, buffer.length);
     }
 
+    /**
+     * converts an int into bytes
+     * @param message the message to convert
+     * @return byte [] the converted message
+     */
     public byte[] intToByte (int message) {
         byte[] buffer = new byte[Integer.BYTES];
         ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
@@ -575,6 +822,11 @@ public class ClientServer {
         return buffer;
     }
 
+    /**
+     * converts bytes into an int
+     * @param buffer the message to convert
+     * @return int the converted message
+     */
     public int byteToInt (byte[] buffer) {
         if (buffer.length!=Integer.BYTES) {
             System.out.println("Impossible to convert the message to int");
@@ -583,12 +835,22 @@ public class ClientServer {
         return ByteBuffer.wrap(buffer).getInt();
     }
 
+    /**
+     * converts a boolean into bytes
+     * @param message the message to convert
+     * @return byte [] the converted message
+     */
     public byte[] booleanToByte (boolean message) {
         byte[] buffer = new byte[1];
         buffer[0]=(byte)(message ? 1 : 0);
         return buffer;
     }
 
+    /**
+     * converts bytes into a boolean
+     * @param buffer the message to convert
+     * @return boolean the converted message
+     */
     public boolean byteToBoolean (byte[] buffer) {
         if (buffer.length!=1) {
             System.out.println("Impossible to convert the message to boolean");
@@ -597,6 +859,11 @@ public class ClientServer {
         return buffer[0]!=0;
     }
 
+    /**
+     * converts a double into bytes
+     * @param message the message to convert
+     * @return byte [] the converted message
+     */
     public byte[] doubleToByte (double message) {
         byte[] buffer = new byte[Double.BYTES];
         ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
@@ -604,6 +871,11 @@ public class ClientServer {
         return buffer;
     }
 
+    /**
+     * converts bytes into a double
+     * @param buffer the message to convert
+     * @return double the converted message
+     */
     public double byteToDouble (byte[] buffer) {
         if (buffer.length!=Double.BYTES) {
             System.out.println("Impossible to convert the message to double");
@@ -612,6 +884,11 @@ public class ClientServer {
         return ByteBuffer.wrap(buffer).getDouble();
     }
 
+    /**
+     * converts ints into bytes
+     * @param message the message to convert
+     * @return byte [] the converted message
+     */
     public byte[] intArrayToByte (int [] message) {
         byte[] buffer = new byte[Integer.BYTES*message.length];
         ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
@@ -620,6 +897,11 @@ public class ClientServer {
         return buffer;
     }
 
+    /**
+     * converts bytes into ints
+     * @param buffer the message to convert
+     * @return int [] the converted message
+     */
     public int [] byteToIntArray (byte[] buffer) {
         if (buffer.length%Integer.BYTES!=0) {
             System.out.println("Impossible to convert the message to int []");
@@ -632,6 +914,11 @@ public class ClientServer {
         return res;
     }
 
+    /**
+     * converts booleans into bytes
+     * @param message the message to convert
+     * @return byte [] the converted message
+     */
     public byte[] booleanArrayToByte (boolean [] message) {
         byte[] res = new byte [1+(message.length+7)/8];
         res[0]=(byte)(1+(message.length-1)%8); // number of booleans in the last byte
@@ -641,6 +928,11 @@ public class ClientServer {
         return res;
     }
 
+    /**
+     * converts bytes into booleans
+     * @param buffer the message to convert
+     * @return boolean [] the converted message
+     */
     public boolean [] byteToBooleanArray (byte[] buffer) {
         if (buffer.length<=1) {
             System.out.println("Impossible to convert the message to boolean []");
@@ -657,6 +949,11 @@ public class ClientServer {
         return res;
     }
 
+    /**
+     * converts doubles into bytes
+     * @param message the message to convert
+     * @return byte [] the converted message
+     */
     public byte[] doubleArrayToByte (double [] message) {
         byte[] buffer = new byte[Double.BYTES*message.length];
         ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
@@ -665,6 +962,11 @@ public class ClientServer {
         return buffer;
     }
 
+    /**
+     * converts bytes into doubles
+     * @param buffer the message to convert
+     * @return double [] the converted message
+     */
     public double [] byteToDoubleArray (byte[] buffer) {
         if (buffer.length%Double.BYTES!=0) {
             System.out.println("Impossible to convert the message to double []");
@@ -677,6 +979,11 @@ public class ClientServer {
         return res;
     }
 
+    /**
+     * converts the number into an object type
+     * @param type the number to convert
+     * @return String the corresponding type
+     */
     private String getType (int type) {
         switch (type) {
             case 80:return "byte []";
@@ -691,6 +998,12 @@ public class ClientServer {
         }
     } 
 
+    /**
+     * sends all bytes
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param byte bytes to send
+     */
     private void sendMessages (InetAddress addr, int port, byte[] buffer) {
         int length=0;
         int space=Math.min(buffer.length,1020);
@@ -711,6 +1024,12 @@ public class ClientServer {
         }
     }
 
+    /**
+     * sends bytes (max length = 1024 bytes)
+     * @param addr recipient's address
+     * @param port the recipient's port
+     * @param byte bytes to send (max length = 1024 bytes)
+     */
     private void sendMessage (InetAddress addr, int port, byte[] message) {
         try {
             if (message.length>1024) {
@@ -725,6 +1044,11 @@ public class ClientServer {
         }
     }
 
+    /**
+     * waits for all bytes to be received
+     * @param ms maximum waiting time
+     * @return byte [] the message received
+     */
     private byte[] receiveMessages (int ms) {
         byte[] res = null;
         if (0<=ms) {
@@ -756,6 +1080,11 @@ public class ClientServer {
         return res;
     }
 
+    /**
+     * waits for bytes to be received (max length = 1024 bytes)
+     * @param ms maximum waiting time
+     * @return byte [] the message received (max length = 1024 bytes)
+     */
     private byte [] receiveMessage (int ms) {
         byte[] res = null;
         if (0<=ms) {
@@ -796,6 +1125,13 @@ public class ClientServer {
         return res;
     }
 
+    /**
+     * waits for the reception of bytes sent by a precise person (max length = 1024 bytes)
+     * @param addr the address of the sender
+     * @param addr the port of the sender
+     * @param ms maximum waiting time
+     * @return byte [] the message received (max length = 1024 bytes)
+     */
     private byte [] receiveMessageFrom (InetAddress addr, int port, int ms) {
         byte[] res = null;
         if (0<=ms) {
@@ -850,6 +1186,9 @@ public class ClientServer {
         return res;
     }
 
+    /**
+     * class destructor
+     */
     protected void finalize() {
         if (socket!=null && !socket.isClosed())
             socket.close();

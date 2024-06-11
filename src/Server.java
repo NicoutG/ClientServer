@@ -25,16 +25,14 @@ public class Server {
         ClientServer client=new ClientServer(portListener);
 
         client.connectToClient(addrClient, portClient);
-        if (client.isConnected()) {
 
-            while (client.isConnected()) {
-                String receivedMessage=client.receiveString();
-                if (!client.isDeconnectionMessage(receivedMessage)) {
-                    System.out.println("Client sent : "+receivedMessage);
-                    client.send("Received");
-                }
+        while (client.isConnected()) {
+            String receivedMessage=client.receiveString();
+            if (!client.isDeconnectionMessage(receivedMessage)) {
+                System.out.println("Client sent : "+receivedMessage);
+                client.send("Received");
             }
-            System.out.println("Deconnection client "+addrClient+" on "+portClient);
         }
+        System.out.println("Deconnection client "+addrClient+" on "+portClient);
     }
 }
